@@ -1,19 +1,29 @@
 const express = require('express');
 const cors = require('cors');
-const { initDb } = require('./database');
+const mongoose = require('mongoose');
 const exceljs = require('exceljs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let db;
+// MongoDB Connection URI from environment variable
+// You can set this in Render.com environment variables
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hoodiedb';
 
-// Initialize database
-initDb().then(database => {
-  db = database;
-  console.log('Database initialized');
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('Connected to MongoDB successfully'))
+  .catch(err => console.error('Failed to connect to MongoDB', err));
+
+// Define Mongoose Schema and Model
+const studentSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  department: { type: String, required: true },
+  size: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
+
+const Student = mongoose.model('Student', studentSchema);
 
 // Endpoint to submit hoodie information
 app.post('/api/students', async (req, res) => {
@@ -36,11 +46,9 @@ app.post('/api/students', async (req, res) => {
   }
 
   try {
-    const result = await db.run(
-      'INSERT INTO students (name, department, size) VALUES (?, ?, ?)',
-      [name, department, size]
-    );
-    res.status(201).json({ id: result.lastID, message: 'Student information saved successfully' });
+    const newStudent = new Student({ name, department, size });
+    await newStudent.save();
+    res.status(201).json({ id: newStudent._id, message: 'Student information saved successfully' });
   } catch (error) {
     console.error('Error saving student info:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -50,7 +58,7 @@ app.post('/api/students', async (req, res) => {
 // Endpoint to get all submissions (for admin panel)
 app.get('/api/students', async (req, res) => {
   try {
-    const students = await db.all('SELECT name, department, size FROM students ORDER BY created_at DESC');
+    const students = await Student.find().sort({ createdAt: -1 });
     res.json(students);
   } catch (error) {
     console.error('Error fetching students:', error);
@@ -61,7 +69,7 @@ app.get('/api/students', async (req, res) => {
 // Endpoint to export data to Excel
 app.get('/api/export', async (req, res) => {
   try {
-    const students = await db.all('SELECT name, department, size FROM students ORDER BY created_at ASC');
+    const students = await Student.find().sort({ createdAt: 1 });
     
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Hoodie Sizes');
@@ -83,7 +91,11 @@ app.get('/api/export', async (req, res) => {
     
     // Add data
     students.forEach(student => {
-      worksheet.addRow(student);
+      worksheet.addRow({
+        name: student.name,
+        department: student.department,
+        size: student.size
+      });
     });
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
