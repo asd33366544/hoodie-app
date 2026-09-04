@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { supabase } from './supabaseClient';
 
 const backgrounds = [
   '/media__1788377129966.jpg',
@@ -41,22 +40,24 @@ function App() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/students`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+      const { error: insertError } = await supabase
+        .from('students')
+        .insert([
+          {
+            name: formData.name.trim(),
+            department: formData.department,
+            size: formData.size
+          }
+        ]);
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to submit data');
+      if (insertError) {
+        throw insertError;
       }
 
       setIsSuccess(true);
     } catch (err) {
-      setError(err.message);
+      console.error('Error submitting student info:', err);
+      setError(err.message || 'Failed to submit data');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import * as XLSX from 'xlsx';
+import { supabase } from './supabaseClient';
 
 function Admin() {
   const [students, setStudents] = useState([]);
@@ -10,13 +10,18 @@ function Admin() {
 
   const fetchStudents = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`${API_URL}/students`);
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data = await response.json();
-      setStudents(data);
+      const { data, error: fetchError } = await supabase
+        .from('students')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setStudents(data || []);
     } catch (err) {
-      setError(err.message);
+      console.error('Error fetching students:', err);
+      setError(err.message || 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -27,7 +32,32 @@ function Admin() {
   }, []);
 
   const handleExport = () => {
-    window.open(`${API_URL}/export`, '_blank');
+    if (!students || students.length === 0) {
+      alert('No data to export!');
+      return;
+    }
+
+    const exportData = students.map((student, idx) => ({
+      '#': idx + 1,
+      'Name': student.name,
+      'Department': student.department,
+      'Size': student.size,
+      'Date': student.created_at ? new Date(student.created_at).toLocaleString('ar-EG') : ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Hoodie Sizes');
+
+    worksheet['!cols'] = [
+      { wch: 5 },
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 10 },
+      { wch: 22 }
+    ];
+
+    XLSX.writeFile(workbook, 'hoodie_sizes.xlsx');
   };
 
   return (
