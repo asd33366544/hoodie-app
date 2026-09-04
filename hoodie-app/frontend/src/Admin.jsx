@@ -64,9 +64,16 @@ function Admin() {
     <div style={{ padding: '2rem', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         <div className="admin-header">
-          <div>
-            <h1 style={{ fontSize: '1.8rem', color: '#0f172a' }}>Admin Dashboard</h1>
-            <p style={{ color: '#64748b' }}>Medical Sciences Hoodie Submissions ({students.length})</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <img 
+              src="/college-logo.jpg" 
+              alt="Faculty Logo" 
+              style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'contain', border: '2px solid #e2e8f0', padding: '2px', background: '#fff' }} 
+            />
+            <div>
+              <h1 style={{ fontSize: '1.6rem', color: '#0f172a' }}>Admin Dashboard</h1>
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Medical Sciences Hoodie Submissions ({students.length})</p>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button 
@@ -101,17 +108,35 @@ function Admin() {
                 <table className="data-table">
                   <thead>
                     <tr>
+                      <th>#</th>
                       <th>Name</th>
                       <th>Department</th>
                       <th>Size</th>
+                      <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {students.map((student, index) => (
-                      <tr key={index}>
-                        <td>{student.name}</td>
+                      <tr key={student.id || index}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{index + 1}</td>
+                        <td style={{ fontWeight: '500' }}>{student.name}</td>
                         <td>{student.department}</td>
-                        <td>{student.size}</td>
+                        <td>
+                          <span style={{ 
+                            display: 'inline-block',
+                            padding: '0.2rem 0.6rem', 
+                            backgroundColor: '#e0f2fe', 
+                            color: '#0369a1', 
+                            borderRadius: '6px', 
+                            fontWeight: '600',
+                            fontSize: '0.85rem'
+                          }}>
+                            {student.size}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          {student.created_at ? new Date(student.created_at).toLocaleString('ar-EG') : '-'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -123,6 +148,11 @@ function Admin() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Footer Credit */}
+        <div style={{ textAlign: 'center', marginTop: '2rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+          Developed by <strong style={{ color: '#475569' }}>Ahmed Atta</strong> • Medical Sciences Graduation
         </div>
       </div>
     </div>
